@@ -1,3 +1,6 @@
+# Run this colab file for running the story generation model
+# https://colab.research.google.com/drive/1gqNKDzQKkUffBQ8QB7xV6VBe_383Au3j?usp=sharing#scrollTo=Q8adTgBHWRZw
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
