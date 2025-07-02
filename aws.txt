@@ -1,0 +1,279 @@
+
+================================================================================================================
+# AWS Lambda Function with S3 Trigger and DynamoDB Integration (AWS Academy Lab Version)
+
+Since you're using AWS Academy Learner Lab, I've adjusted the instructions to work within the lab environment's permissions model:
+
+## Step 1: Create an S3 Bucket
+1. Sign in to the AWS Management Console using your AWS Academy credentials
+2. Navigate to the S3 service
+3. Click "Create bucket"
+4. Enter a unique bucket name (e.g., "lambda-trigger-bucket-[your-initials]")
+5. Keep the default settings and click "Create bucket"
+
+## Step 2: Create a DynamoDB Table
+1. Open a new browser tab and navigate to the DynamoDB console
+2. Click "Create table"
+3. Enter "newtable" as the table name (this must match the name in the Lambda code)
+4. For the partition key, enter "unique" and set the type to "String"
+5. Leave all other settings as default
+6. Click "Create table"
+
+## Step 3: Create a Lambda Function
+1. Navigate to the Lambda console
+2. Click "Create function"
+3. Select "Author from scratch"
+4. Enter a function name (e.g., "S3EventProcessor")
+5. For Runtime, select "Python 3.9" (or the latest available Python version)
+6. Under Permissions, expand "Change default execution role"
+7. Select "Use an existing role" 
+8. From the dropdown, select the "LabRole" that's provided in your AWS Academy environment (this role should already have the necessary permissions)
+9. Click "Create function"
+
+## Step 4: Add Lambda Function Code
+1. In the function code editor, paste the following Python code:
+
+import boto3
+from uuid import uuid4
+def lambda_handler(event, context):
+    s3 = boto3.client("s3")
+    dynamodb = boto3.resource('dynamodb')
+    for record in event['Records']:
+        bucket_name = record['s3']['bucket']['name']
+        object_key = record['s3']['object']['key']
+        size = record['s3']['object'].get('size', -1)
+        event_name = record ['eventName']
+        event_time = record['eventTime']
+        dynamoTable = dynamodb.Table('newtable')
+        dynamoTable.put_item(
+            Item={'unique': str(uuid4()), 'Bucket': bucket_name, 'Object': object_key,'Size': size, 'Event': event_name, 'EventTime': event_time})
+
+
+2. Click "Deploy" to save the function
+
+## Step 5: Test the Lambda Function (Optional)
+1. Click on the "Test" tab in the Lambda console
+2. Click "Create new event" if you don't have an existing test event
+3. You'll see a warning message because the S3 bucket is empty and triggers are not yet added
+4. This step is just to ensure your function code deploys correctly
+
+## Step 6: Add S3 Trigger to Lambda
+1. Return to your Lambda function's overview page
+2. In the "Function overview" section at the top, click "Add trigger"
+3. From the dropdown, select "S3"
+4. Select your bucket from the dropdown
+5. For Event type, choose "All object create events"
+6. Acknowledge the recursive trigger warning if shown
+7. Click "Add"
+
+## Step 7: Test the Integration
+1. Navigate to your S3 bucket in the AWS console
+2. Click "Upload" and select any file from your computer
+3. Click "Upload" to complete the upload
+4. Wait 1-2 minutes for the Lambda function to process the event
+5. Navigate to the DynamoDB console
+6. Select "newtable" and click "Explore table items"
+7. You should see a new entry with information about the file you uploaded, including:
+   - A unique UUID as the primary key
+   - The bucket name
+   - The object key (file name)
+   - The file size
+   - The event name (e.g., "ObjectCreated:Put")
+   - The event timestamp
+=====================================================================================================================================
+
+NAT GateWay
+
+
+
+VPC ctnd....
+Select  Mumbai region
+
+Step 1: Create VPC   ( MyVPC )  - 10.0.0.0/16
+Step 2: Create two subnets
+
+subnet1 - 10.0.1.0/24 - Web-Server
+subnet2 - 10.0.2.0/24 - Db-Server
+
+Step 3: Enable public IP to subnet1
+
+Step 4: Create Internet Gateway attached to VPC  -- MyIGW
+Step 5: Create Route table  --  InternetRT
+Step 6: Attach Route table to subnet1
+Step 7: Attach Route table to Internet Gateway
+Now, subnet1 is public.
+
+++++++++++++
+
+Now, Lets launch web-server in public subnet.
+Services ---Ec2 ---- Launch instance  -- 
+Name : WebServer
+AMI : linux
+keypair : webKP30.pem 
+Network : MyVPC
+                 Subnet: 10.0.1.0/24
+Security Group : Web-SG  , Description: WebSG30
+
+ADD RULE
+Type		Source
+SSH		Anywhere	
+HTTP		Anywhere
+
+Review and launch --- Launch -- Download Launch-- View Instance
++++++++++++++++++++++
+
+Lets Launch  Database Server in Private SUbnet.
+
+Services ---Ec2 ---- Launch instance  
+Name : DbServer
+AMI : Linux
+Create new keypair --> (dbKP30.pem )
+Network : MyVPC
+                  Subnet: 10.0.2.0/24
+Security Group : Db-SG  , Description: DbSG30
+
+Change Type   from SSH to MYSQL/Aurora
+
+Type		Source		
+MYSQL/Aurora	Custom		10.0.1.0/24
+
+( MySQL Port is open to entire subnet )
+Review and launch  -->  launch instances --- View instances
+
+++++++++++++++++
+
+Now, web server can pull data from database server.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+DBA wants to create some files.  Wants to perform maintenance activity.
+Can he connect?
+As DB Server is not having  public IP and it is not having internect connectivity, DBA cannot connect.
+
+For this, we need to create Bastion server/ Jump server  in public subnet
+It is noting but normal EC2 Machine
+
+
+
+Services -- EC2 -- Luanch -- Amazon Linux ---> select VPC , Select subnet
+
+Name: BastionServer
+Security Group: BastionSG30
+Description: BastionSG30
+
+(SSH  port  -- should be open to myself)
+Type		Source
+SSH		My IP
+
+Review and launch -- launch -- Create new keypair  ---Bastion30.pem
+
+View Instances
+
++++++++++++++++
+
+Now, Only I can connect to Bastion server through SSH
+From the Bastion server, I should able to jump into Dbserver.
+That means, DbServer SSH port should be open to Bastion server.
+
+Go to Dbserver security group  - DbSG30 ( new tab )
+Select DbSG -- Inbound --Edit
+Add Rule
+
+Type		Source		
+SSH		Custom		10.0.1.231/24  ( Private IP of bastion server)
+
+Save.
+
+Now, Lets test can we connect to DB server
+
+In EC2 Dashboard --  select bastion server -- connect
+copy user@public_ip
+
+Open putty
+Host Name - user@public_ip
+Provide PPK  file -- Connect!
+$  sudo su
+# yum update  -y
+
+From bastion-- we need to jump to dbserver
+
+Now, to connect to DBserver, we need to enter the details to DBserver in Bastion server.
+
+Select DbServer --- connect
+
+Copy the entire ssh command.
+
+As we are connecting from linux to linux  .pem file is enough.
+
+Enter the ssh command in putty.
+eg:
+# ssh -i "dbKP30.pem" ec2-user@10.0.2.249
+
+
+Note: To connect the .pem file need to be present in present working directory.
+
+Now, we need to copy abc.pem file in bastion server.
+It is there in our windows machine.
+
+We use WINSCP to transfer the file from windows to linux
+
+In google search for "WinSCP"
+winscp.net  
+download and run.
+
+Open WINSCP
+We will connet to bastion server using Winscp
+host name:  user@ipaddress  
+advanced ---Authentication --- private key file - select the ppk file -- open -- ok - login
+
+Now, drag and drop the pem file  to bastion server.
+
+In Putty
+# ls   ( We should able to see the file )
+
+Now connect to Dbserver by running the SSH command
+# ssh -i "DbKP7.pem" ec2-user@10.0.2.106
+
+You are now connected to DBserver!!!
+
+Now, In DB server, lets execute the following commands
+$ sudo su
+# 
+
+Now I want to upgrade the latest version of MYSQL database
+
+Command to upgrade MYSQL database
+# yum install mysql -y
+
+not successfull.
+We cannot install, As we are not having internet connection to private subnet.
+
+To get internet connection, we create NAT server. ( Network Address Translator )
+
+The purpose of NAT is to provide internet to private subnet.
+
+We need to create NAT in public subnet.
+We cannot connect NAT to private Subnet.
+So, we create RouteTable.
+One end of RouteTable , I connect to NAT.
+Another end of RouteTable, I Connect to private subnet.
+
+Instead of creating new RouteTable
+
+Lets the name of default RouteTable to NatRT
+Select NatRT  -- Subnet Associations -- Edit subnet Associations -- select private subnet-- save
+
+Select NatRT  -- Routes -- Edit Routes --Add Route -- Target: NAT Gateway ( Select NAT )
+Destination- 0.0.0.0/0  -- Save routes -- close
+
+Now, lets test are we able to get internet to our DBServer.
+
+Run the same command in putty again
+
+# yum install mysql -y
+
+It Works!!
+
+
+===================================================================================================================================================
+
