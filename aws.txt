@@ -276,4 +276,23 @@ It Works!!
 
 
 ===================================================================================================================================================
+EBS mount and persistant 
 
+sudo su
+lsblk
+lsblk -fs 
+fdisk -l 
+fdisk /dev/xvdc
+m
+n 
+defaults 
+w 
+mkfs.xfs /dev/xvdc1 
+mkdir /mnt/cseb 
+mount /dev/xvdc1 /mnt/cseb 
+lsblk 
+vi /etc/fstab 
+i 
+/dev/xvdc1 /mnt/cseb xfs defaults 0 0 
+esc :wq 
+==================================================================================================================================================
