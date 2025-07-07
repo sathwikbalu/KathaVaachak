@@ -1,0 +1,51 @@
+===================================================================================================================================================
+EBS mount and persistant 
+
+sudo su
+lsblk
+lsblk -fs 
+fdisk -l 
+fdisk /dev/xvdc
+m
+n 
+defaults 
+w 
+mkfs.xfs /dev/xvdc1 
+mkdir /mnt/cseb 
+mount /dev/xvdc1 /mnt/cseb 
+lsblk 
+vi /etc/fstab 
+i 
+/dev/xvdc1 /mnt/cseb xfs defaults 0 0 
+esc :wq 
+==================================================================================================================================================
+ssh -i "your-key.pem" ec2-user@<public-ip>
+
+sudo yum update -y
+sudo amazon-linux-extras install docker -y
+sudo service docker start
+sudo usermod -a -G docker ec2-user
+
+mkdir my-nginx && cd my-nginx
+
+echo "<h1>Welcome to my custom Docker page on EC2!</h1>" > index.html
+
+# Dockerfile
+FROM nginx:alpine
+COPY index.html /usr/share/nginx/html/index.html
+
+docker build -t custom-nginx .
+
+docker run -d -p 80:80 custom-nginx
+
+http://<your-ec2-public-ip>
+==============================================================
+#l/bin/bash
+sudo su
+yum update -y
+yum install httpd -y
+cd /var/www/html
+echo "MyGoogle" > index.html
+service httpd start
+chkconfig httpd
+===================================================================================================================================
