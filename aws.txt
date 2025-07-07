@@ -317,3 +317,12 @@ docker run -d -p 80:80 custom-nginx
 
 http://<your-ec2-public-ip>
 ==============================================================
+#l/bin/bash
+sudo su
+yum update -y
+yum install httpd -y
+cd /var/www/html
+echo "MyGoogle" > index.html
+service httpd start
+chkconfig httpd
+===================================================================================================================================
